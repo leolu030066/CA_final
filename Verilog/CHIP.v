@@ -247,6 +247,9 @@ module Imm_Gen(Instruction, Immediate);
             Immediate[31:6] = 26'b1;
         end
     end
+    else begin
+        Immediate[31:0] = 32'b0 ;
+    end
 
 
     
