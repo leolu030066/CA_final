@@ -227,24 +227,24 @@ module Imm_Gen(Instruction, Immediate);
     //Todo : Other instruction for hw1(bonus)
     else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b101) begin
         //SRAI instructions
-        Immediate[4:0] = Instruction[24:20] ;
+        Immediate[5:0] = Instruction[25:20] ;
         //signed extension
-        if(Immediate[4] == 1'b0) begin
-            Immediate[31:5] = 27'b0;
+        if(Immediate[5] == 1'b0) begin
+            Immediate[31:6] = 26'b0;
         end
         else begin
-            Immediate[31:5] = 27'b1;
+            Immediate[31:6] = 26'b1;
         end
     end
     else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b001) begin
         //SLLI instructions
-        Immediate[4:0] = Instruction[24:20] ;
+        Immediate[5:0] = Instruction[25:20] ;
         //signed extension
-        if(Immediate[4] == 1'b0) begin
-            Immediate[31:5] = 27'b0;
+        if(Immediate[5] == 1'b0) begin
+            Immediate[31:6] = 26'b0;
         end
         else begin
-            Immediate[31:5] = 27'b1;
+            Immediate[31:6] = 26'b1;
         end
     end
 
