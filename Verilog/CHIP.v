@@ -107,6 +107,8 @@ module reg_file(clk, rst_n, wen, a1, a2, aw, d, q1, q2);
 endmodule
 
 module Imm_Gen(Instruction, Immediate);
+    // part(1) in architecture image
+
     // Generate Corresponding Immediate from raw instructions (No immediate instruction -> 32'b0)
     input [31:0] Instruction ;  //mem_rdata_I (32-bit instruction)
     output [31:0] Immediate ; //ex: used for computing next instruction address or ALU operation(32-bit in Jupiter Simulator)
@@ -256,6 +258,8 @@ module Imm_Gen(Instruction, Immediate);
 endmodule
 
 module 32_MUX_2(s0_data,s1_data,sel,output_data);
+    // part(4) in architecture image
+
     input [31:0] s0_data,s1_data ;
     input sel ;
     output [31:0] output_data ;
@@ -270,6 +274,8 @@ module 32_MUX_2(s0_data,s1_data,sel,output_data);
 endmodule
 
 module 32_ADDER(s0_data,s1_data,output_data) ;
+    // part(5) in architecture image
+
     //do not consider overflow
     input [31:0] s0_data,s1_data ;
     output [31:0] output_data ;
@@ -283,7 +289,17 @@ module 32_ADDER(s0_data,s1_data,output_data) ;
 
 endmodule
 
+module 1_AND(s0,s1,output_value);
+    // part(6) in architecture image
+    input s0,s1 ;
+    output output_value ;
 
+    reg output_data ;
+    always @(s0 or s1) 
+    begin
+        output_value = s0 && s1 ;
+    end
+endmodule
 
 
 module mulDiv(clk, rst_n, valid, ready, mode, in_A, in_B, out);
