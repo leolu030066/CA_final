@@ -301,35 +301,183 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
-module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl);
+module XOR_1(s0,s1,output_value);
+    // part(6) in architecture image
+    input s0,s1 ;
+    output output_value ;
+
+    reg output_data ;
+    always @(s0 or s1) 
+    begin
+        output_value = s0 ^ s1 ;
+    end
+endmodule
+
+module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl);
 	input Opcode;
-	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl;
-	case(Opcode)
-		7b'0110011: begin
-			//R-type
-		end
-		7b'0010011: begin
-			//I-type immediate
-		end
-		7b'0000011: begin
-			//I-type load
-		end
-		7b'0100011: begin
-			//S-type
-		end
-		7b'1100011: begin
-			//B-type
-		end
-		7b'1101111: begin
-			//jal
-		end
-		7b'1100111: begin
-			//jalr
-		end
-		7b'0010111: begin
-			//auipc
-		end
-	endcase
+	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	
+	always@(*) begin
+		case(Opcode)
+			7'b0110011: begin
+				//R-type
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 2;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 0;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b0010011: begin
+				//I-type immediate
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 3;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b0000011: begin
+				//I-type load
+				Branch_ctrl = 0;
+				MemRead_ctrl = 1;
+				MemtoReg_ctrl = 1;
+				ALUOP = 0;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b0100011: begin
+				//S-type
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 0;
+				MemWrite_ctrl = 1;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 0;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b1100011: begin
+				//B-type
+				Branch_ctrl = 1;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 1;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 0;
+				RegWrite_ctrl = 0;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b1101111: begin
+				//jal
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 0;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 1;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b1100111: begin
+				//jalr
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 0;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 1;
+				JALR_ctrl = 1;
+				AIUPC_ctrl = 0;
+			end
+			7'b0010111: begin
+				//auipc
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 3;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 1;
+			end
+			default: begin
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 0;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 0;
+				RegWrite_ctrl = 0;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+		endcase
+	end
+endmodule
+
+module ALUControl(ALUOP, Instruction, ALU_ctrl);
+	//ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
+    input ALUOP;
+	output Instruction, ALU_ctrl;
+	always@(*) begin
+		case(ALUOP)
+			0: begin
+				//I-type load, S-type, jal, jalr
+				ALU_ctrl = 0;
+			end
+			1: begin
+				//B-type
+				ALU_ctrl = 1;
+			end
+			2: begin
+				//R-type
+				case(Instruction[14:12])
+					3'b000: begin
+						if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
+						else begin
+							if(Instruction[25] == 1) ALU_ctrl = 2;//mul instruction
+							else ALU_ctrl = 0;//add instruction
+						end
+					end
+					default: ALU_ctrl = 0;
+				endcase
+			end
+			3: begin
+				//I-type immediate, auipc
+				case(Instruction[14:12])
+					3'b000: ALU_ctrl = 0;//addi instruxtion
+					3'b001: ALU_ctrl = 3;//slli instruxtion
+					3'b101: ALU_ctrl = 4;//srli instruxtion
+					default: ALU_ctrl = 0;
+				endcase
+			end
+		endcase
+	end
+
 endmodule
 
 module mulDiv(clk, rst_n, valid, ready, mode, in_A, in_B, out);

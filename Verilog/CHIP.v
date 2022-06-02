@@ -324,7 +324,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 0;
+				ALUOP = 2;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 0;
 				RegWrite_ctrl = 1;
@@ -337,7 +337,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 1;
+				ALUOP = 3;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
@@ -350,7 +350,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 1;
 				MemtoReg_ctrl = 1;
-				ALUOP = 2;
+				ALUOP = 0;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
@@ -363,7 +363,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 2;
+				ALUOP = 0;
 				MemWrite_ctrl = 1;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 0;
@@ -376,7 +376,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 1;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 2;
+				ALUOP = 1;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 0;
 				RegWrite_ctrl = 0;
@@ -389,7 +389,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 2;
+				ALUOP = 0;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
@@ -402,11 +402,11 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 2;
+				ALUOP = 0;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 0;
+				JAL_ctrl = 1;
 				JALR_ctrl = 1;
 				AIUPC_ctrl = 0;
 			end
@@ -415,7 +415,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				Branch_ctrl = 0;
 				MemRead_ctrl = 0;
 				MemtoReg_ctrl = 0;
-				ALUOP = 1;
+				ALUOP = 3;
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
@@ -439,8 +439,45 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 	end
 endmodule
 
-module ALUControl(ALUOP, IC_30_14_12, output_value);
-    
+module ALUControl(ALUOP, Instruction, ALU_ctrl);
+	//ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
+    input ALUOP;
+	output Instruction, ALU_ctrl;
+	always@(*) begin
+		case(ALUOP)
+			0: begin
+				//I-type load, S-type, jal, jalr
+				ALU_ctrl = 0;
+			end
+			1: begin
+				//B-type
+				ALU_ctrl = 1;
+			end
+			2: begin
+				//R-type
+				case(Instruction[14:12])
+					3'b000: begin
+						if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
+						else begin
+							if(Instruction[25] == 1) ALU_ctrl = 2;//mul instruction
+							else ALU_ctrl = 0;//add instruction
+						end
+					end
+					default: ALU_ctrl = 0;
+				endcase
+			end
+			3: begin
+				//I-type immediate, auipc
+				case(Instruction[14:12])
+					3'b000: ALU_ctrl = 0;//addi instruxtion
+					3'b001: ALU_ctrl = 3;//slli instruxtion
+					3'b101: ALU_ctrl = 4;//srli instruxtion
+					default: ALU_ctrl = 0;
+				endcase
+			end
+			default: ALU_ctrl = 0;
+		endcase
+	end
 
 endmodule
 
