@@ -112,145 +112,155 @@ module Imm_Gen(Instruction, Immediate);
     output [31:0] Immediate ; //ex: used for computing next instruction address or ALU operation(32-bit in Jupiter Simulator)
 
     reg signed [31:0] Immediate ;
-    if(Instruction[6:0] == 7'b0010111) begin
-        //AUIPC instructions
-        Immediate[11:0] = 12'b0 ;
-        Immediate[31:12] = Instruction[31:12] ;
-    end
-    else if(Instruction[6:0] == 7'b1101111) begin
-        //JAL instructions
-        Immediate[0] = 1'b0 ;
-        Immediate[19:12] = Instruction[19:12] ;
-        Immediate[11] = Instruction[20] ;
-        Immediate[10:1] = Instruction[30:21] ;
-        Immediate[20] = Instruction[31] ;
-        //signed extension
-        if(Immediate[20] == 1'b0) begin
-            Immediate[31:21] = 11'b0;
+    always @(Instruction)
+    begin
+        if(Instruction[6:0] == 7'b0010111) begin
+            //AUIPC instructions
+            Immediate[11:0] = 12'b0 ;
+            Immediate[31:12] = Instruction[31:12] ;
         end
-        else begin
-            Immediate[31:21] = 11'b1;
+        else if(Instruction[6:0] == 7'b1101111) begin
+            //JAL instructions
+            Immediate[0] = 1'b0 ;
+            Immediate[19:12] = Instruction[19:12] ;
+            Immediate[11] = Instruction[20] ;
+            Immediate[10:1] = Instruction[30:21] ;
+            Immediate[20] = Instruction[31] ;
+            //signed extension
+            if(Immediate[20] == 1'b0) begin
+                Immediate[31:21] = 11'b0;
+            end
+            else begin
+                Immediate[31:21] = 11'b1;
+            end
         end
-    end
-    else if(Instruction[6:0] == 7'b1100111 && Instruction[14:12] == 3'b000) begin
-        //JALR instructions
-        Immediate[11:0] = Instruction[31:20] ;
-        //signed extension
-        if(Immediate[11] == 1'b0) begin
-            Immediate[31:12] = 20'b0;
+        else if(Instruction[6:0] == 7'b1100111 && Instruction[14:12] == 3'b000) begin
+            //JALR instructions
+            Immediate[11:0] = Instruction[31:20] ;
+            //signed extension
+            if(Immediate[11] == 1'b0) begin
+                Immediate[31:12] = 20'b0;
+            end
+            else begin
+                Immediate[31:12] = 20'b1;
+            end
         end
-        else begin
-            Immediate[31:12] = 20'b1;
+        else if(Instruction[6:0] == 7'b1100011 && Instruction[14:12] == 3'b000) begin
+            //BEQ instructions
+            Immediate[0] = 0 ;
+            Immediate[11] = Instruction[7] ;
+            Immediate[4:1] = Instruction[11:8] ;
+            Immediate[10:5] = Instruction[30:25] ;
+            Immediate[12] = Instruction[31] ;
+            //signed extension
+            if(Immediate[12] == 1'b0) begin
+                Immediate[31:13] = 19'b0;
+            end
+            else begin
+                Immediate[31:13] = 19'b1;
+            end
         end
-    end
-    else if(Instruction[6:0] == 7'b1100011 && Instruction[14:12] == 3'b000) begin
-        //BEQ instructions
-        Immediate[0] = 0 ;
-        Immediate[11] = Instruction[7] ;
-        Immediate[4:1] = Instruction[11:8] ;
-        Immediate[10:5] = Instruction[30:25] ;
-        Immediate[12] = Instruction[31] ;
-        //signed extension
-        if(Immediate[12] == 1'b0) begin
-            Immediate[31:13] = 19'b0;
+        else if(Instruction[6:0] == 7'b0000011 && Instruction[14:12] == 3'b010) begin
+            //LW instructions
+            Immediate[11:0] = Instruction[31:20] ;
+            //signed extension
+            if(Immediate[11] == 1'b0) begin
+                Immediate[31:12] = 20'b0;
+            end
+            else begin
+                Immediate[31:12] = 20'b1;
+            end
         end
-        else begin
-            Immediate[31:13] = 19'b1;
+        else if(Instruction[6:0] == 7'b0100011 && Instruction[14:12] == 3'b010) begin
+            //SW instructions
+            Immediate[4:0] = Instruction[11:7] ;
+            Immediate[11:5] = Instruction[31:25] ;
+            //signed extension
+            if(Immediate[11] == 1'b0) begin
+                Immediate[31:12] = 20'b0;
+            end
+            else begin
+                Immediate[31:12] = 20'b1;
+            end
         end
-    end
-    else if(Instruction[6:0] == 7'b0000011 && Instruction[14:12] == 3'b010) begin
-        //LW instructions
-        Immediate[11:0] = Instruction[31:20] ;
-        //signed extension
-        if(Immediate[11] == 1'b0) begin
-            Immediate[31:12] = 20'b0;
+        else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b000) begin
+            //ADDI instructions
+            Immediate[11:0] = Instruction[31:20] ;
+            //signed extension
+            if(Immediate[11] == 1'b0) begin
+                Immediate[31:12] = 20'b0;
+            end
+            else begin
+                Immediate[31:12] = 20'b1;
+            end
         end
-        else begin
-            Immediate[31:12] = 20'b1;
+        else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b010) begin
+            //SLTI instructions
+            Immediate[11:0] = Instruction[31:20] ;
+            //signed extension
+            if(Immediate[11] == 1'b0) begin
+                Immediate[31:12] = 20'b0;
+            end
+            else begin
+                Immediate[31:12] = 20'b1;
+            end
         end
-    end
-    else if(Instruction[6:0] == 7'b0100011 && Instruction[14:12] == 3'b010) begin
-        //SW instructions
-        Immediate[4:0] = Instruction[11:7] ;
-        Immediate[11:5] = Instruction[31:25] ;
-        //signed extension
-        if(Immediate[11] == 1'b0) begin
-            Immediate[31:12] = 20'b0;
+        else if(Instruction[6:0] == 7'b0110011) begin
+            //ADD and SUB and XOR and MUL instructions
+            Immediate[31:0] = 32'b0 ;
         end
-        else begin
-            Immediate[31:12] = 20'b1;
-        end
-    end
-    else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b000) begin
-        //ADDI instructions
-        Immediate[11:0] = Instruction[31:20] ;
-        //signed extension
-        if(Immediate[11] == 1'b0) begin
-            Immediate[31:12] = 20'b0;
-        end
-        else begin
-            Immediate[31:12] = 20'b1;
-        end
-    end
-    else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b010) begin
-        //SLTI instructions
-        Immediate[11:0] = Instruction[31:20] ;
-        //signed extension
-        if(Immediate[11] == 1'b0) begin
-            Immediate[31:12] = 20'b0;
-        end
-        else begin
-            Immediate[31:12] = 20'b1;
-        end
-    end
-    else if(Instruction[6:0] == 7'b0110011) begin
-        //ADD and SUB and XOR and MUL instructions
-        Immediate[31:0] = 32'b0 ;
-    end
     
-    //Todo : Other instruction for hw1(bonus)
+        //Todo : Other instruction for hw1(bonus)
 
-    else if(Instruction[6:0] == 7'b1100011 && Instruction[14:12] == 3'b101) begin
-        //BGE instructions
-        Immediate[0] = 0 ;
-        Immediate[11] = Instruction[7] ;
-        Immediate[4:1] = Instruction[11:8] ;
-        Immediate[10:5] = Instruction[30:25] ;
-        Immediate[12] = Instruction[31] ;
-        //signed extension
-        if(Immediate[12] == 1'b0) begin
-            Immediate[31:13] = 19'b0;
+        else if(Instruction[6:0] == 7'b1100011 && Instruction[14:12] == 3'b101) begin
+            //BGE instructions
+            Immediate[0] = 0 ;
+            Immediate[11] = Instruction[7] ;
+            Immediate[4:1] = Instruction[11:8] ;
+            Immediate[10:5] = Instruction[30:25] ;
+            Immediate[12] = Instruction[31] ;
+            //signed extension
+            if(Immediate[12] == 1'b0) begin
+                Immediate[31:13] = 19'b0;
+            end
+            else begin
+                Immediate[31:13] = 19'b1;
+            end
+        end
+        else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b101) begin
+            //SRAI instructions
+            Immediate[4:0] = Instruction[24:20] ;
+            //signed extension
+            if(Immediate[4] == 1'b0) begin
+                Immediate[31:5] = 27'b0;
+            end
+            else begin
+                Immediate[31:5] = 27'b1;
+            end
+        end
+        else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b001) begin
+            //SLLI instructions
+            Immediate[4:0] = Instruction[24:20] ;
+            //signed extension
+            if(Immediate[4] == 1'b0) begin
+                Immediate[31:5] = 27'b0;
+            end
+            else begin
+                Immediate[31:5] = 27'b1;
+            end
         end
         else begin
-            Immediate[31:13] = 19'b1;
+            Immediate[31:0] = 32'b0 ;
         end
-    end
-    else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b101) begin
-        //SRAI instructions
-        Immediate[4:0] = Instruction[24:20] ;
-        //signed extension
-        if(Immediate[4] == 1'b0) begin
-            Immediate[31:5] = 27'b0;
-        end
-        else begin
-            Immediate[31:5] = 27'b1;
-        end
-    end
-    else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b001) begin
-        //SLLI instructions
-        Immediate[4:0] = Instruction[24:20] ;
-        //signed extension
-        if(Immediate[4] == 1'b0) begin
-            Immediate[31:5] = 27'b0;
-        end
-        else begin
-            Immediate[31:5] = 27'b1;
-        end
-    end
-    else begin
-        Immediate[31:0] = 32'b0 ;
     end
 endmodule
+
+module 32_MUX_2(rs1_data,rs2_data,sel,output_data);
+
+
+endmodule
+
+
 
 
 
