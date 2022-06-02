@@ -257,7 +257,7 @@ module Imm_Gen(Instruction, Immediate);
     end
 endmodule
 
-module 32_MUX_2(s0_data,s1_data,sel,output_data);
+module MUX_32_2(s0_data,s1_data,sel,output_data);
     // part(4) in architecture image
 
     input [31:0] s0_data,s1_data ;
@@ -273,7 +273,7 @@ module 32_MUX_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
-module 32_ADDER(s0_data,s1_data,output_data) ;
+module ADDER_32(s0_data,s1_data,output_data) ;
     // part(5) in architecture image
 
     //do not consider overflow
@@ -289,7 +289,7 @@ module 32_ADDER(s0_data,s1_data,output_data) ;
 
 endmodule
 
-module 1_AND(s0,s1,output_value);
+module AND_1(s0,s1,output_value);
     // part(6) in architecture image
     input s0,s1 ;
     output output_value ;
