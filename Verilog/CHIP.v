@@ -301,6 +301,148 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
+module XOR_1(s0,s1,output_value);
+    // part(6) in architecture image
+    input s0,s1 ;
+    output output_value ;
+
+    reg output_data ;
+    always @(s0 or s1) 
+    begin
+        output_value = s0 ^ s1 ;
+    end
+endmodule
+
+module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl);
+	input Opcode;
+	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	
+	always@(*) begin
+		case(Opcode)
+			7'b0110011: begin
+				//R-type
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 0;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 0;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b0010011: begin
+				//I-type immediate
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 1;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b0000011: begin
+				//I-type load
+				Branch_ctrl = 0;
+				MemRead_ctrl = 1;
+				MemtoReg_ctrl = 1;
+				ALUOP = 2;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b0100011: begin
+				//S-type
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 2;
+				MemWrite_ctrl = 1;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 0;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b1100011: begin
+				//B-type
+				Branch_ctrl = 1;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 2;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 0;
+				RegWrite_ctrl = 0;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b1101111: begin
+				//jal
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 2;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 1;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+			7'b1100111: begin
+				//jalr
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 2;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 1;
+				AIUPC_ctrl = 0;
+			end
+			7'b0010111: begin
+				//auipc
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 1;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 1;
+				RegWrite_ctrl = 1;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 1;
+			end
+			default: begin
+				Branch_ctrl = 0;
+				MemRead_ctrl = 0;
+				MemtoReg_ctrl = 0;
+				ALUOP = 0;
+				MemWrite_ctrl = 0;
+				ALUSrc_ctrl = 0;
+				RegWrite_ctrl = 0;
+				JAL_ctrl = 0;
+				JALR_ctrl = 0;
+				AIUPC_ctrl = 0;
+			end
+		endcase
+	end
+endmodule
+
+module ALUControl(ALUOP, IC_30_14_12, output_value);
+    
+
+endmodule
 
 module mulDiv(clk, rst_n, valid, ready, mode, in_A, in_B, out);
     // Todo: your HW2
