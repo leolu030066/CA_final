@@ -255,11 +255,33 @@ module Imm_Gen(Instruction, Immediate);
     end
 endmodule
 
-module 32_MUX_2(rs1_data,rs2_data,sel,output_data);
+module 32_MUX_2(s0_data,s1_data,sel,output_data);
+    input [31:0] s0_data,s1_data ;
+    input sel ;
+    output [31:0] output_data ;
 
+    reg signed [31:0] output_data ;
 
+    always @(s0_data or s1_data or sel) 
+    begin
+        if(sel) output_data = s1_data ;
+        else output_data = s0_data ;
+    end
 endmodule
 
+module 32_ADDER(s0_data,s1_data,output_data) ;
+    //do not consider overflow
+    input [31:0] s0_data,s1_data ;
+    output [31:0] output_data ;
+
+    reg signed [31:0] output_data ;
+
+    always @(s0_data or s1_data)
+    begin
+      output_data = s0_data+s1_data ;
+    end
+
+endmodule
 
 
 
