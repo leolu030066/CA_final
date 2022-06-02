@@ -107,7 +107,7 @@ module reg_file(clk, rst_n, wen, a1, a2, aw, d, q1, q2);
 endmodule
 
 module Imm_Gen(Instruction, Immediate);
-    // Generate Corresponding Immediate from raw instructions
+    // Generate Corresponding Immediate from raw instructions (No immediate instruction -> 32'b0)
     input [31:0] Instruction ;  //mem_rdata_I (32-bit instruction)
     output [31:0] Immediate ; //ex: used for computing next instruction address or ALU operation(32-bit in Jupiter Simulator)
 
@@ -208,7 +208,8 @@ module Imm_Gen(Instruction, Immediate);
         Immediate[31:0] = 32'b0 ;
     end
     
-    
+    //Todo : Other instruction for hw1(bonus)
+
     else if(Instruction[6:0] == 7'b1100011 && Instruction[14:12] == 3'b101) begin
         //BGE instructions
         Immediate[0] = 0 ;
@@ -224,37 +225,31 @@ module Imm_Gen(Instruction, Immediate);
             Immediate[31:13] = 19'b1;
         end
     end
-    //Todo : Other instruction for hw1(bonus)
     else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b101) begin
         //SRAI instructions
-        Immediate[5:0] = Instruction[25:20] ;
+        Immediate[4:0] = Instruction[24:20] ;
         //signed extension
-        if(Immediate[5] == 1'b0) begin
-            Immediate[31:6] = 26'b0;
+        if(Immediate[4] == 1'b0) begin
+            Immediate[31:5] = 27'b0;
         end
         else begin
-            Immediate[31:6] = 26'b1;
+            Immediate[31:5] = 27'b1;
         end
     end
     else if(Instruction[6:0] == 7'b0010011 && Instruction[14:12] == 3'b001) begin
         //SLLI instructions
-        Immediate[5:0] = Instruction[25:20] ;
+        Immediate[4:0] = Instruction[24:20] ;
         //signed extension
-        if(Immediate[5] == 1'b0) begin
-            Immediate[31:6] = 26'b0;
+        if(Immediate[4] == 1'b0) begin
+            Immediate[31:5] = 27'b0;
         end
         else begin
-            Immediate[31:6] = 26'b1;
+            Immediate[31:5] = 27'b1;
         end
     end
     else begin
         Immediate[31:0] = 32'b0 ;
     end
-
-
-    
-
-
 endmodule
 
 
