@@ -69,13 +69,17 @@ module CHIP(clk,
 	//ALUControl related
 	wire alu_ctrl;
 	//WB related
-	wire wbrd;
-	//NormalPC related
-	wire normalpc;
-	//BranchPC related
-	wire branchpc;
+	// wire wbrd;
+	//NormalPC related (PC+4)
+	reg [31:0] normalpc;
+	//Branch/JAL/AUIPC target address (PC+immediate)
+	reg [31:0] pc_imm;
+    //JALR target address (x1+immediate)
+    reg [31:0] x1_imm;
+    // j target address
+    reg [31:0] j_add;
 	//SelPC related
-	wire dobranch;
+    wire dobranch ;
 	
 	
 	
@@ -86,16 +90,21 @@ module CHIP(clk,
 	Imm_Gen Imm_Gen(.Instruction(PC), .Immediate(immediate));
 	
 	
-	ADDER_32 NormalPC(.s0_data(4), .s1_data(PC), .output_data(normalpc));
+	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(PC), .output_data(normalpc));
+	ADDER_32 ImmPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
+    ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm)) ;
+    ADDER_32 Imm(.s0_data(32'd0,.s1_data(immediate)),.output_data(j_add)) ;
+
 	//EX
 	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
 	//TODO: ALU     ALU ALU(.clk(clk), .rst_n(rst_n), .valid(), .ready(), .mode(aluop), .in_A(), .in_B(), .out(aluout));
 	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl));
 	
-	
-	ADDER_32 BranchPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
+
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
-	MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
+	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
+    MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(j_add),.sel()) ; //todo
+
 	//ME
 	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(address_control), .output_data(mem_addr_D));
 	//WB
@@ -327,6 +336,27 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
         else output_data = s0_data ;
     end
 endmodule
+
+module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel,output_data) ;
+    input [31:0] s0_data,s1_data,s2_data,s3_data ;
+    input [1:0]sel ;
+    output [31:0] output_data ;
+
+    reg signed [31:0] output_data ;
+
+    always @(s0_data or s1_data or s2_data or s3_data or sel) 
+    begin
+        case(sel) 
+            2'd0 : output_data = s0_data ;
+            2'd1 : output_data = s1_data ;
+            2'd2 : output_data = s2_data ;
+            2'd3 : output_data = s4_data ;
+            default : output_data = s0_data ;
+        endcase
+    end
+endmodule
+
+
 
 module ADDER_32(s0_data,s1_data,output_data) ;
     // part(5) in architecture image
