@@ -358,8 +358,8 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
-module MUX_32_4(s0_data,s1_data,s2_data,sel, output_data) ;
-    input [31:0] s0_data,s1_data,s2_data ;
+module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel, output_data) ;
+    input [31:0] s0_data,s1_data,s2_data ,s3_data;
     input [1:0]sel ;
     output [31:0] output_data ;
 
@@ -371,6 +371,7 @@ module MUX_32_4(s0_data,s1_data,s2_data,sel, output_data) ;
             2'd0 : output_data = s0_data ;
             2'd1 : output_data = s1_data ;
             2'd2 : output_data = s2_data ;
+            2'd3 : output_data = s3_data ;
             default : output_data = s0_data ;
         endcase
     end
