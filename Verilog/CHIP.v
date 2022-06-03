@@ -420,7 +420,7 @@ module AND_1(s0,s1,output_value);
     reg output_data ;
     always @(s0 or s1) 
     begin
-        output_value = s0 && s1 ;
+        output_value = (s0 & s1) ;
     end
 endmodule
 
@@ -436,14 +436,15 @@ module OR_1(s0,s1,output_value);
     reg output_data ;
     always @(s0 or s1) 
     begin
-        output_value = s0 | s1 ;
+        output_value = (s0 | s1) ;
     end
 endmodule
 
 module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, selpc);
-	input Opcode;
+	input [6:0] Opcode;
 	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl;
 	output [1:0] ALUOP;
+	output [1:0] selpc;
 	reg Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl;
 	reg [1:0] ALUOP;
 	reg [1:0] selpc;
@@ -553,10 +554,11 @@ endmodule
 
 module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
     //ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right, 5:bge
-    input ALUOP, Instruction;
+    input [31:0] Instruction;
+	input [1:0] ALUOP;
     output [1:0] ALU_ctrl;
     output mul;
-    reg [1:0] ALU_ctrl
+    reg [1:0] ALU_ctrl;
     always@(*) begin
         case(ALUOP)
             0: begin
@@ -569,7 +571,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
 					3'b000: begin
 						ALU_ctrl = 1;
 					end
-					3'b101 begin
+					3'b101: begin
 						ALU_ctrl = 5;
 					end
 					default: ALU_ctrl = 1;
@@ -616,7 +618,6 @@ module BasicALU (
     input [31:0] input_2;
     input [2:0] mode;
     output out_zero;
-    output bge_zero;
     output [31:0] out;
 
     reg [31:0] regist;
@@ -672,6 +673,7 @@ module MUL(
     parameter MUL  = 3'd3;
     parameter SLLI  = 3'd4;
     parameter SLRI = 3'd5;
+	parameter OUT = 3'd6;
 
     // Todo: Wire and reg if needed
     reg  [ 2:0] state, state_nxt;
