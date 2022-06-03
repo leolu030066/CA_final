@@ -33,7 +33,7 @@ module CHIP(clk,
     //---------------------------------------//
 
     // Todo: other wire/reg
-
+	
     //---------------------------------------//
     // Do not modify this part!!!            //
     reg_file reg0(                           //
@@ -49,7 +49,14 @@ module CHIP(clk,
     //---------------------------------------//
 
     // Todo: any combinational/sequential circuit
-
+	wire branch_ctrl, memread_ctrl, memtoreg_ctrl, memwrite_ctrl, alusrc_ctrl, regwrite_ctrl, jal_ctrl, jalr_ctrl, aiupc_ctrl;
+	wire [1:0] aluop;
+	//ID
+	Control Control(.Opcode(PC[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regwrite_ctrl), .JAL_ctrl(jal_ctrl), .JALR_ctrl(jalr_ctrl), .AIUPC_ctrl(aiupc_ctrl));
+	
+	
+	
+	
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             PC <= 32'h00010000; // Do not modify this value!!!
@@ -86,7 +93,9 @@ module reg_file(clk, rst_n, wen, a1, a2, aw, d, q1, q2);
         for (i=0; i<word_depth; i=i+1)
             mem_nxt[i] = (wen && (aw == i)) ? d : mem[i];
     end
-
+	
+	
+	
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             mem[0] <= 0;
@@ -301,6 +310,7 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
+//XOR_1 TBD
 module XOR_1(s0,s1,output_value);
     // part(6) in architecture image
     input s0,s1 ;
@@ -315,8 +325,10 @@ endmodule
 
 module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl);
 	input Opcode;
-	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
-	
+	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	output [1:0] ALUOP;
+	reg Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	reg [1:0] ALUOP;
 	always@(*) begin
 		case(Opcode)
 			7'b0110011: begin
@@ -439,10 +451,11 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 	end
 endmodule
 
-module ALUControl(ALUOP, Instruction, ALU_ctrl);
+module ALUControl(ALUOP, Instruction, ALU_ctrl, );
 	//ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
-    input ALUOP;
-	output Instruction, ALU_ctrl;
+    input ALUOP, Instruction;
+	output [1:0] ALU_ctrl;
+	reg [1:0] ALU_ctrl
 	always@(*) begin
 		case(ALUOP)
 			0: begin
@@ -483,5 +496,5 @@ endmodule
 
 module mulDiv(clk, rst_n, valid, ready, mode, in_A, in_B, out);
     // Todo: your HW2
-
+	
 endmodule

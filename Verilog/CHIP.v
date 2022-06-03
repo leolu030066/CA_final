@@ -33,7 +33,7 @@ module CHIP(clk,
     //---------------------------------------//
 
     // Todo: other wire/reg
-
+	
     //---------------------------------------//
     // Do not modify this part!!!            //
     reg_file reg0(                           //
@@ -49,7 +49,18 @@ module CHIP(clk,
     //---------------------------------------//
 
     // Todo: any combinational/sequential circuit
-
+	
+	//Control related
+	wire branch_ctrl, memread_ctrl, memtoreg_ctrl, memwrite_ctrl, alusrc_ctrl, regwrite_ctrl, jal_ctrl, jalr_ctrl, aiupc_ctrl;
+	wire [1:0] aluop;
+	
+	
+	//ID
+	Control Control(.Opcode(PC[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regwrite_ctrl), .JAL_ctrl(jal_ctrl), .JALR_ctrl(jalr_ctrl), .AIUPC_ctrl(aiupc_ctrl));
+	XOR_1 Control_regout_(.s0(),.s1(),.output_value());
+	
+	
+	
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             PC <= 32'h00010000; // Do not modify this value!!!
@@ -86,7 +97,9 @@ module reg_file(clk, rst_n, wen, a1, a2, aw, d, q1, q2);
         for (i=0; i<word_depth; i=i+1)
             mem_nxt[i] = (wen && (aw == i)) ? d : mem[i];
     end
-
+	
+	
+	
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             mem[0] <= 0;
@@ -485,7 +498,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl);
 
 endmodule
 
-module mulDiv(clk, rst_n, valid, ready, mode, in_A, in_B, out);
+module ALU(clk, rst_n, valid, ready, mode, in_A, in_B, out);
     // Todo: your HW2
-
+	
 endmodule
