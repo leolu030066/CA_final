@@ -315,8 +315,10 @@ endmodule
 
 module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl);
 	input Opcode;
-	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
-	
+	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	output [1:0] ALUOP;
+	reg Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	reg [1:0] ALUOP;
 	always@(*) begin
 		case(Opcode)
 			7'b0110011: begin
@@ -441,8 +443,9 @@ endmodule
 
 module ALUControl(ALUOP, Instruction, ALU_ctrl);
 	//ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
-    input ALUOP;
-	output Instruction, ALU_ctrl;
+    input ALUOP, Instruction;
+	output [1:0] ALU_ctrl;
+	reg [1:0] ALU_ctrl
 	always@(*) begin
 		case(ALUOP)
 			0: begin

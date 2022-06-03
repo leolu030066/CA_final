@@ -475,6 +475,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl);
 					default: ALU_ctrl = 0;
 				endcase
 			end
+			default: ALU_ctrl = 0;
 		endcase
 	end
 
