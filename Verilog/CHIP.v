@@ -81,7 +81,7 @@ module CHIP(clk,
 	wire _mul;
 	reg [1:0] selpc;
 	reg [31:0] finalpc;
-	assign PC_nxt = finalpc;
+	
 	//Control
 	Control Control(.Opcode(mem_rdata_I[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .selpc(selpc));
 	OR_1 UseData(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(getdata));
@@ -106,11 +106,11 @@ module CHIP(clk,
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 
-    MUX_32_3 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.sel(selpc), .output(finalpc));
+    MUX_32_3 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.sel(selpc), .output(PC_nxt));
 
 	//ME
 	MUX_32_2 PostALU(.s0_data(0), .s1_data(rs2_data), .sel(memwrite_ctrl), .output_data(mem_wdata_D));
-	MUX_32_2 DataAddr(.s0_data(0), .s1_data(finalpc), .sel(memwrite_ctrl), .output_data(mem_addr_D));
+	MUX_32_2 DataAddr(.s0_data(0), .s1_data(PC), .sel(memwrite_ctrl), .output_data(mem_addr_D));
 	//WB
 	MUX_32_2 WB(.s0_data(0), .s1_data(mem_rdata_D), .sel(memread_ctrl), .output_data(rd_data));
 	//TODO: jal, wbrd
@@ -122,6 +122,7 @@ module CHIP(clk,
             
         end
         else begin
+			if()
             PC <= PC_nxt;
             
         end
@@ -517,7 +518,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 endmodule
 
 module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
-    //ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
+    //ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right, 5:bge
     input ALUOP, Instruction;
     output [1:0] ALU_ctrl;
     output mul;
@@ -530,7 +531,15 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
             end
             1: begin
                 //B-type
-                ALU_ctrl = 1;
+				case(Instruction[14:12])
+					3'b000: begin
+						ALU_ctrl = 1;
+					end
+					3'b101 begin
+						ALU_ctrl = 5;
+					end
+					default: ALU_ctrl = 1;
+				endcase
             end
             2: begin
                 //R-type
