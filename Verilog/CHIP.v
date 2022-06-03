@@ -65,7 +65,7 @@ module CHIP(clk,
 	//PreALU related
 	wire prealuout;
 	//ALU related
-	reg aluout;
+	reg [31:0] aluout;
 	//ALUControl related
 	wire alu_ctrl;
 	//WB related
@@ -78,38 +78,41 @@ module CHIP(clk,
     reg [31:0] x1_imm;
 	//SelPC related
     wire dobranch ;
-	
-	reg [1:0] selpc
-	
-	
+	wire _mul;
+	reg [1:0] selpc;
+	reg [31:0] finalpc;
+	assign PC_nxt = finalpc;
 	//Control
-	Control Control(.Opcode(PC[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .selpc(selpc));
+	Control Control(.Opcode(mem_rdata_I[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .selpc(selpc));
 	OR_1 UseData(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(getdata));
 	
 	//ID
-	Imm_Gen Imm_Gen(.Instruction(PC), .Immediate(immediate));
+	Imm_Gen Imm_Gen(.Instruction(mem_rdata_I), .Immediate(immediate));
 	
 	
-	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(PC), .output_data(normalpc));
-	ADDER_32 ImmPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
+	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(mem_rdata_I), .output_data(normalpc));
+	ADDER_32 ImmPC(.s0_data(mem_rdata_I), .s1_data(immediate), .output_data(branchpc));
     ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm)) ;
     ADDER_32 Imm(.s0_data(32'd0,.s1_data(immediate)),.output_data(j_add)) ;
 
 	//EX
 	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
-	//TODO: ALU     ALU ALU(.clk(clk), .rst_n(rst_n), .valid(), .ready(), .mode(aluop), .in_A(), .in_B(), .out(aluout));
-	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl), ,);
+	
+	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl),.mul(._mul));
+
+    BasicALU(.input_1(rs1),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero),out_bge)
 	
 
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 
-    MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(j_add),.sel(selpc));
+    MUX_32_3 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.sel(selpc), .output(finalpc));
 
 	//ME
-	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(memwrite_ctrl), .output_data(mem_wdata_D));
+	MUX_32_2 PostALU(.s0_data(0), .s1_data(rs2_data), .sel(memwrite_ctrl), .output_data(mem_wdata_D));
+	MUX_32_2 DataAddr(.s0_data(0), .s1_data(finalpc), .sel(memwrite_ctrl), .output_data(mem_addr_D));
 	//WB
-	//MUX_32_2 WB(.s0_data(aluout), .s1_data(mem_rdata_D), .sel(memtoreg_ctrl), .output_data(wbrd));
+	MUX_32_2 WB(.s0_data(0), .s1_data(mem_rdata_D), .sel(memread_ctrl), .output_data(rd_data));
 	//TODO: jal, wbrd
 	
 	
@@ -338,7 +341,7 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
-module MUX_32_3(s0_data,s1_data,s2_data,output_data) ;
+module MUX_32_3(s0_data,s1_data,s2_data,sel, output_data) ;
     input [31:0] s0_data,s1_data,s2_data ;
     input [1:0]sel ;
     output [31:0] output_data ;
@@ -386,12 +389,11 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
-<<<<<<< HEAD
+
 //OR_1 TBD
 module OR_1(s0,s1,output_value);
-=======
-module XOR_1(s0,s1,output_value);
->>>>>>> dc8845bdfd13e2086f2fb9a285d37b8d6266619c
+
+
     // part(6) in architecture image
     input s0,s1 ;
     output output_value ;
@@ -514,50 +516,231 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 	end
 endmodule
 
-module ALUControl(ALUOP, Instruction, ALU_ctrl);
-	//ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
+module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
+    //ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
     input ALUOP, Instruction;
-	output [1:0] ALU_ctrl;
-	reg [1:0] ALU_ctrl
-	always@(*) begin
-		case(ALUOP)
-			0: begin
-				//I-type load, S-type, jal, jalr
-				ALU_ctrl = 0;
-			end
-			1: begin
-				//B-type
-				ALU_ctrl = 1;
-			end
-			2: begin
-				//R-type
-				case(Instruction[14:12])
-					3'b000: begin
-						if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
-						else begin
-							if(Instruction[25] == 1) ALU_ctrl = 2;//mul instruction
-							else ALU_ctrl = 0;//add instruction
-						end
-					end
-					default: ALU_ctrl = 0;
-				endcase
-			end
-			3: begin
-				//I-type immediate, auipc
-				case(Instruction[14:12])
-					3'b000: ALU_ctrl = 0;//addi instruxtion
-					3'b001: ALU_ctrl = 3;//slli instruxtion
-					3'b101: ALU_ctrl = 4;//srli instruxtion
-					default: ALU_ctrl = 0;
-				endcase
-			end
-			default: ALU_ctrl = 0;
-		endcase
-	end
+    output [1:0] ALU_ctrl;
+    output mul;
+    reg [1:0] ALU_ctrl
+    always@(*) begin
+        case(ALUOP)
+            0: begin
+                //I-type load, S-type, jal, jalr
+                ALU_ctrl = 0;
+            end
+            1: begin
+                //B-type
+                ALU_ctrl = 1;
+            end
+            2: begin
+                //R-type
+                case(Instruction[14:12])
+                    3'b000: begin
+                        if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
+                        else begin
+                            if(Instruction[25] == 1) ALU_ctrl = 2;//mul instruction
+                            else ALU_ctrl = 0;//add instruction
+                        end
+                    end
+                    default: ALU_ctrl = 0;
+                endcase
+            end
+            3: begin
+                //I-type immediate, auipc
+                case(Instruction[14:12])
+                    3'b000: ALU_ctrl = 0;//addi instruxtion
+                    3'b001: ALU_ctrl = 3;//slli instruxtion
+                    3'b101: ALU_ctrl = 4;//srli instruxtion
+                    default: ALU_ctrl = 0;
+                endcase
+            end
+            if(ALU_ctrl == 2) mul = 1;
+            else mul = 0;
+            default: ALU_ctrl = 0;
+        endcase
+    end
 
 endmodule
 
-module ALU(clk, rst_n, valid, ready, mode, in_A, in_B, out);
-    // Todo: your HW2
-	
+module BasicALU (
+    input_1,
+    input_2,
+    mode,
+    out_zero,
+    out
+);
+    input [31:0] input_1;
+    input [31:0] input_2;
+    input [2:0] mode;
+    output out_zero;
+    output bge_zero;
+    output [31:0] out;
+
+    reg [31:0] regist;
+
+    parameter ADD = 3'd0;
+    parameter SUB = 3'd1;
+    parameter MUL  = 3'd2;
+    parameter SLLI  = 3'd3;
+    parameter SLRI = 3'd4;
+
+    assign out = regist;
+    assign out_zero = (regist == 32'b0)? 1'b1:1'b0;
+    assign bge_zero = (regist >= 32'b0)? 1'b1:1'b0;
+
+    always @(*) begin
+        case(mode)
+            ADD: regist = data1_i + data2_i;
+            SUB: regist = data1_i - data2_i;
+            SLLI: regist = data1_i << data2_i;
+            SLRI: regist = data1_i >> data2_i;
+            default: data_reg = {32{1'b0}};
+        endcase
+    end
+
+endmodule
+module ALU(
+    clk,
+    rst_n,
+    valid,
+    ready,
+    mode,
+    in_A,
+    in_B,
+    out,
+    out_zero
+);
+
+    // Definition of ports
+    input         clk, rst_n;
+    input         valid;
+    input  [2:0]  mode; // 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right
+    output        ready;
+    input  [31:0] in_A, in_B;
+    output [63:0] out;
+    output        out_zero;
+
+    // Definition of states
+    parameter IDLE = 3'd0;
+    parameter ADD = 3'd1;
+    parameter SUB = 3'd2;
+    parameter MUL  = 3'd3;
+    parameter SLLI  = 3'd4;
+    parameter SLRI = 3'd5;
+
+    // Todo: Wire and reg if needed
+    reg  [ 2:0] state, state_nxt;
+    reg  [ 4:0] counter, counter_nxt;
+    reg  [63:0] shreg, shreg_nxt;
+    reg  [31:0] alu_in, alu_in_nxt;
+    reg  [32:0] alu_out;
+
+    // Todo: Instatiate any primitives if needed
+
+    // Todo 5: Wire assignments
+    
+    // Combinational always block
+    // Todo 1: Next-state logic of state machine
+    always @(*) begin
+        case(state)
+            IDLE: begin
+                if(valid)begin
+                    case(mode)
+                        0 : state_nxt = ADD;
+                        1 : state_nxt = SUB;
+                        1 : state_nxt = MUL;
+                        2 : state_nxt = SLLI;
+                        3 : state_nxt = SLRI;
+                        default : state_nxt = IDLE;
+                    endcase
+                end
+                else state_nxt = IDLE;
+            end
+            ADD :
+                state_nxt = OUT;
+            end
+            SUB:
+                state_nxt = OUT;
+            MUL :if (counter == 31) begin
+                state_nxt = OUT;
+            end
+            SLLI :
+                state_nxt = OUT;
+            SLRI : 
+                state_nxt = OUT;
+            OUT : state_nxt = IDLE;
+            default :
+                state_nxt = state;
+        endcase
+    end
+    assign ready = (state == OUT)? 1'b1 : 1'b0;
+    assign out = (state == OUT)? shreg : 0; 
+    // Todo 2: Counter
+    always @(*) begin
+        counter_nxt = 0;
+        if (state == MUL) counter_nxt = counter + 1;
+    end
+    // ALU input
+    always @(*) begin
+        case(state)
+            IDLE: begin
+                if (valid) alu_in_nxt = in_B;
+                else       alu_in_nxt = 0;
+            end
+            OUT : alu_in_nxt = 0;
+            default: alu_in_nxt = alu_in;
+        endcase
+    end
+
+    // Todo 3: ALU output
+     always @(*) begin
+        case(state)
+            MUL : begin
+                if(shreg[0] == 1'b1)
+                    alu_out = shreg[63:32] + alu_in;                    
+                else
+                    alu_out = shreg[63:32];
+            end           
+            ADD : begin
+                alu_out = shreg + alu_in;
+            end
+            SUB : begin
+                alu_out = shreg - alu_in;
+            end
+            SLLI :begin
+                alu_out = shreg << alu_in;
+            end
+            SLRI :begin
+                alu_out = shreg >> alu_in;
+            default : alu_out = 0;
+        endcase
+    end    
+    // Todo 4: Shift register
+    always @(*) begin
+        shreg_nxt = shreg;
+        case(state)
+            IDLE: if (valid == 1) shreg_nxt = {32'b0,  in_A};
+            MUL: shreg_nxt = {alu_out, shreg[31:1]};
+            ADD: shreg_nxt = {32'b0, alu_out};
+            SUB: shreg_nxt = {32'b0, alu_out};
+            SLLI: shreg_nxt = {32'b0, alu_out};
+            SLRI: shreg_nxt = {32'b0, alu_out};
+        endcase
+    end
+    // Todo: Sequential always block
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= IDLE;
+            counter     <= 5'b0;
+            shreg       <= 64'b0;
+            alu_in      <= 32'b0;
+        end
+        else begin
+            state <= state_nxt;
+            shreg <= shreg_nxt;
+            counter <= counter_nxt;
+            alu_in <= alu_in_nxt;
+        end
+    end
+
 endmodule
