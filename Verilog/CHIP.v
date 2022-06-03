@@ -301,6 +301,7 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
+//XOR_1 TBD
 module XOR_1(s0,s1,output_value);
     // part(6) in architecture image
     input s0,s1 ;
