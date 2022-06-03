@@ -49,7 +49,7 @@ module CHIP(clk,
     //---------------------------------------//
 
     // Todo: any combinational/sequential circuit
-	assign mem_wdata_D = rs2_data;
+	assign mem_wdata_D = rs2_data; //TBD rs1?
 	assign mem_rdata_D = rd_data;
 	assign mem_addr_I = PC;
 	assign rs1 = mem_rdata_I[19:15];
