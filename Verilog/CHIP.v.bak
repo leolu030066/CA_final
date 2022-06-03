@@ -61,13 +61,19 @@ module CHIP(clk,
 	wire [1:0] aluop;
 	wire address_control;
 	//Imm_Gen related
-	wire immediate;
+	reg signed [31:0] immediate;
 	//PreALU related
-	wire prealuout;
+	reg [31:0] prealuout;
 	//ALU related
 	reg [31:0] aluout;
 	//ALUControl related
 	wire alu_ctrl;
+
+    wire mul_aluout;
+
+    wire mul_ready;
+
+    wire final_aluout;
 	//WB related
 	// wire wbrd;
 	//NormalPC related (PC+4)
@@ -76,43 +82,70 @@ module CHIP(clk,
 	reg [31:0] pc_imm;
     //JALR target address (x1+immediate)
     reg [31:0] x1_imm;
+
 	//SelPC related
     wire dobranch ;
 	wire _mul;
 	reg [1:0] selpc;
-	reg [31:0] finalpc;
 	
 	//Control
 	Control Control(.Opcode(mem_rdata_I[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .selpc(selpc));
-	OR_1 UseData(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(getdata));
+	// OR_1 UseData(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(getdata));
 	
 	//ID
 	Imm_Gen Imm_Gen(.Instruction(mem_rdata_I), .Immediate(immediate));
 	
 	
-	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(mem_rdata_I), .output_data(normalpc));
-	ADDER_32 ImmPC(.s0_data(mem_rdata_I), .s1_data(immediate), .output_data(branchpc));
-    ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm)) ;
-    ADDER_32 Imm(.s0_data(32'd0,.s1_data(immediate)),.output_data(j_add)) ;
+	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(PC), .output_data(normalpc));
+	ADDER_32 ImmPC(.s0_data(PC), .s1_data(immediate), .output_data(pc_imm));
+    ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm));
 
 	//EX
 	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
 	
-	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl),.mul(._mul));
+	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl),.mul(_mul));
 
-    BasicALU(.input_1(rs1),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero),out_bge)
-	
+    BasicALU EXE(.input_1(rs1),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero));
+    //Todo MUX
+    MUL MUL(
+        .clk(clk),
+        .rst_n(rst_n),
+        .valid(_mul),
+        .ready(mul_ready),
+        .mode(alu_ctrl),
+        .in_A(rs1),
+        .in_B(prealuout),
+        .out(mul_aluout)
+        );
+    MUX_32_2 deside_aluout(.s0_data(mul_aluout),.s1_data(aluout),.sel(_mul),.output_data(final_aluout));
 
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 
-    MUX_32_3 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.sel(selpc), .output(PC_nxt));
+    always @(normalpc or pc_imm or x1_imm or pc or selpc)begin
+        if (_mul) begin
+
+        end
+        else if (sel == 2'b01)begin
+            // beq/bge
+            if(dobranch)begin
+                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output(PC_nxt));
+            end
+            else begin
+                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output(PC_nxt));
+            end
+            
+        else begin
+            MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(selpc), .output(PC_nxt));
+        end
+    end
+    
 
 	//ME
 	MUX_32_2 PostALU(.s0_data(0), .s1_data(rs2_data), .sel(memwrite_ctrl), .output_data(mem_wdata_D));
-	MUX_32_2 DataAddr(.s0_data(0), .s1_data(PC), .sel(memwrite_ctrl), .output_data(mem_addr_D));
+	MUX_32_2 DataAddr(.s0_data(0), .s1_data(rd_data+immediate), .sel(memwrite_ctrl), .output_data(mem_addr_D));
 	//WB
-	MUX_32_2 WB(.s0_data(0), .s1_data(mem_rdata_D), .sel(memread_ctrl), .output_data(rd_data));
+	MUX_32_2 WB(.s0_data(final_aluout), .s1_data(mem_rdata_D), .sel(memtoreg_ctrl), .output_data(rd_data));
 	//TODO: jal, wbrd
 	
 	
@@ -122,7 +155,7 @@ module CHIP(clk,
             
         end
         else begin
-			if()
+			
             PC <= PC_nxt;
             
         end
@@ -342,8 +375,8 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
-module MUX_32_3(s0_data,s1_data,s2_data,sel, output_data) ;
-    input [31:0] s0_data,s1_data,s2_data ;
+module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel, output_data) ;
+    input [31:0] s0_data,s1_data,s2_data ,s3_data;
     input [1:0]sel ;
     output [31:0] output_data ;
 
@@ -355,6 +388,7 @@ module MUX_32_3(s0_data,s1_data,s2_data,sel, output_data) ;
             2'd0 : output_data = s0_data ;
             2'd1 : output_data = s1_data ;
             2'd2 : output_data = s2_data ;
+            2'd3 : output_data = s3_data ;
             default : output_data = s0_data ;
         endcase
     end
@@ -540,7 +574,6 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
 					end
 					default: ALU_ctrl = 1;
 				endcase
-                
             end
             2: begin
                 //R-type
@@ -593,6 +626,7 @@ module BasicALU (
     parameter MUL  = 3'd2;
     parameter SLLI  = 3'd3;
     parameter SLRI = 3'd4;
+    parameter BGE = 3'd5;
 
     assign out = regist;
     assign out_zero = (regist == 32'b0)? 1'b1:1'b0;
@@ -600,16 +634,17 @@ module BasicALU (
 
     always @(*) begin
         case(mode)
-            ADD: regist = data1_i + data2_i;
-            SUB: regist = data1_i - data2_i;
-            SLLI: regist = data1_i << data2_i;
-            SLRI: regist = data1_i >> data2_i;
-            default: data_reg = {32{1'b0}};
+            ADD: regist = input_1 + input_2;
+            SUB: regist = input_1 - input_2;
+            SLLI: regist = input_1 << input_2;
+            SLRI: regist = input_1 >> input_2;
+            BGE: regist = (input_1 > input_2)? 1'b1:1'b0;
+            default: regist = {32{1'b0}};
         endcase
     end
 
 endmodule
-module ALU(
+module MUL(
     clk,
     rst_n,
     valid,
@@ -668,7 +703,7 @@ module ALU(
             end
             ADD :
                 state_nxt = OUT;
-            end
+            
             SUB:
                 state_nxt = OUT;
             MUL :if (counter == 31) begin
@@ -722,6 +757,7 @@ module ALU(
             end
             SLRI :begin
                 alu_out = shreg >> alu_in;
+            end
             default : alu_out = 0;
         endcase
     end    

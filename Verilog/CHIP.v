@@ -98,26 +98,26 @@ module CHIP(clk,
 	
 	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(PC), .output_data(normalpc));
 	ADDER_32 ImmPC(.s0_data(PC), .s1_data(immediate), .output_data(pc_imm));
-    ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm)) ;
+    ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm));
 
 	//EX
 	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
 	
-	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl),.mul(._mul));
+	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl),.mul(_mul));
 
-    BasicALU EXE(.input_1(rs1),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero)) ;
+    BasicALU EXE(.input_1(rs1),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero));
     //Todo MUX
     MUL MUL(
         .clk(clk),
         .rst_n(rst_n),
         .valid(_mul),
         .ready(mul_ready),
-        .mode(alu_ctrl)
+        .mode(alu_ctrl),
         .in_A(rs1),
         .in_B(prealuout),
         .out(mul_aluout)
         );
-    MUX_32_2 deside_aluout(.s0_data(mul_aluout),.s1_data(aluout,.sel(_mul),.output_data(final_aluout)));
+    MUX_32_2 deside_aluout(.s0_data(mul_aluout),.s1_data(aluout),.sel(_mul),.output_data(final_aluout));
 
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
@@ -129,14 +129,14 @@ module CHIP(clk,
         else if (sel == 2'b01)begin
             // beq/bge
             if(dobranch)begin
-                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(2'd1), .output(PC_nxt));
+                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output(PC_nxt));
             end
             else begin
-                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(2'd0), .output(PC_nxt));
+                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output(PC_nxt));
             end
             
         else begin
-            MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(selpc), .output(PC_nxt));
+            MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output(PC_nxt));
         end
     end
     
