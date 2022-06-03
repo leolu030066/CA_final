@@ -382,7 +382,7 @@ module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel, output_data) ;
 
     reg signed [31:0] output_data ;
 
-    always @(s0_data or s1_data or s2_data or sel) 
+    always @(s0_data or s1_data or s2_data or s3_data or sel) 
     begin
         case(sel) 
             2'd0 : output_data = s0_data ;
