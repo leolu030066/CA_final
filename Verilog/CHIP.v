@@ -76,8 +76,6 @@ module CHIP(clk,
 	reg [31:0] pc_imm;
     //JALR target address (x1+immediate)
     reg [31:0] x1_imm;
-    // j target address
-    reg [31:0] j_add;
 	//SelPC related
     wire dobranch ;
 	
@@ -105,8 +103,9 @@ module CHIP(clk,
 
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
-	
+
     MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(j_add),.sel(selpc));
+
 	//ME
 	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(memwrite_ctrl), .output_data(mem_wdata_D));
 	//WB
@@ -339,20 +338,19 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
-module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel,output_data) ;
-    input [31:0] s0_data,s1_data,s2_data,s3_data ;
+module MUX_32_3(s0_data,s1_data,s2_data,output_data) ;
+    input [31:0] s0_data,s1_data,s2_data ;
     input [1:0]sel ;
     output [31:0] output_data ;
 
     reg signed [31:0] output_data ;
 
-    always @(s0_data or s1_data or s2_data or s3_data or sel) 
+    always @(s0_data or s1_data or s2_data or sel) 
     begin
         case(sel) 
             2'd0 : output_data = s0_data ;
             2'd1 : output_data = s1_data ;
             2'd2 : output_data = s2_data ;
-            2'd3 : output_data = s4_data ;
             default : output_data = s0_data ;
         endcase
     end
@@ -388,8 +386,12 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
+<<<<<<< HEAD
 //OR_1 TBD
 module OR_1(s0,s1,output_value);
+=======
+module XOR_1(s0,s1,output_value);
+>>>>>>> dc8845bdfd13e2086f2fb9a285d37b8d6266619c
     // part(6) in architecture image
     input s0,s1 ;
     output output_value ;
