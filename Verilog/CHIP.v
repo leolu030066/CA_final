@@ -703,7 +703,7 @@ module MUL(
             end
             ADD :
                 state_nxt = OUT;
-            end
+            
             SUB:
                 state_nxt = OUT;
             MUL :if (counter == 31) begin
@@ -757,6 +757,7 @@ module MUL(
             end
             SLRI :begin
                 alu_out = shreg >> alu_in;
+            end
             default : alu_out = 0;
         endcase
     end    
