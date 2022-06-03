@@ -91,7 +91,7 @@ module CHIP(clk,
 	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl));
 	ADDER_32 BranchPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
-	MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(address_control), .output_data(mem_addr_D));
+	MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 	//ME
 	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(address_control), .output_data(mem_addr_D));
 	//WB

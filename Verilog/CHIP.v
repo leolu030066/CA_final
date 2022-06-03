@@ -76,7 +76,7 @@ module CHIP(clk,
 	wire branchpc;
 	//SelPC related
 	wire dobranch;
-	wire pc;
+	
 	
 	
 	//Control
@@ -84,18 +84,22 @@ module CHIP(clk,
 	XOR_1 Control_regout(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(address_control));
 	//ID
 	Imm_Gen Imm_Gen(.Instruction(PC), .Immediate(immediate));
+	
+	
 	ADDER_32 NormalPC(.s0_data(4), .s1_data(PC), .output_data(normalpc));
 	//EX
 	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
 	//TODO: ALU     ALU ALU(.clk(clk), .rst_n(rst_n), .valid(), .ready(), .mode(aluop), .in_A(), .in_B(), .out(aluout));
 	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl));
+	
+	
 	ADDER_32 BranchPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 	//ME
 	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(address_control), .output_data(mem_addr_D));
 	//WB
-	MUX_32_2 WB(.s0_data(aluout), .s1_data(mem_rdata_D), .sel(memtoreg_ctrl), .output_data(wbrd));
+	//MUX_32_2 WB(.s0_data(aluout), .s1_data(mem_rdata_D), .sel(memtoreg_ctrl), .output_data(wbrd));
 	//TODO: jal, wbrd
 	
 	
@@ -460,7 +464,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 1;
+				JAL_ctrl = 0;
 				JALR_ctrl = 1;
 				AIUPC_ctrl = 0;
 			end
