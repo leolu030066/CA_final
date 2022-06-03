@@ -111,14 +111,15 @@ module CHIP(clk,
         end
         else if (sel == 2'b01)begin
             // beq/bge
-            if(dobranch) begin
-                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(selpc), .output(PC_nxt));
+            if(dobranch)begin
+                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(2'd1), .output(PC_nxt));
             end
-            else
+            else begin
+                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(2'd0), .output(PC_nxt));
+            end
             
-        end
         else begin
-
+            MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),s3_data(PC),.sel(selpc), .output(PC_nxt));
         end
     end
     
