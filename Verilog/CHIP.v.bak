@@ -50,14 +50,14 @@ module CHIP(clk,
 
     // Todo: any combinational/sequential circuit
 	assign mem_wdata_D = rs2_data;
-	assign mem_rdata_D = rd_data;
 	assign mem_addr_I = PC;
 	assign rs1 = mem_rdata_I[19:15];
 	assign rs2 = mem_rdata_I[24:20];
 	assign rd = mem_rdata_I[11:7];
-	
+	assign mem_wen_D = memwrite_ctrl;
 	//Control related
-	wire branch_ctrl, memread_ctrl, memtoreg_ctrl, alusrc_ctrl, jal_ctrl, jalr_ctrl, aiupc_ctrl;
+	wire branch_ctrl, memread_ctrl, memtoreg_ctrl, alusrc_ctrl;
+	reg memwrite_ctrl;
 	wire [1:0] aluop;
 	wire address_control;
 	//Imm_Gen related
@@ -65,37 +65,53 @@ module CHIP(clk,
 	//PreALU related
 	wire prealuout;
 	//ALU related
-	wire aluout;
+	reg aluout;
 	//ALUControl related
 	wire alu_ctrl;
 	//WB related
-	wire wbrd;
-	//NormalPC related
-	wire normalpc;
-	//BranchPC related
-	wire branchpc;
+	// wire wbrd;
+	//NormalPC related (PC+4)
+	reg [31:0] normalpc;
+	//Branch/JAL/AUIPC target address (PC+immediate)
+	reg [31:0] pc_imm;
+    //JALR target address (x1+immediate)
+    reg [31:0] x1_imm;
+    // j target address
+    reg [31:0] j_add;
 	//SelPC related
-	wire dobranch;
-	wire pc;
+    wire dobranch ;
+	
+	reg [1:0] selpc
 	
 	
 	//Control
-	Control Control(.Opcode(PC[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(mem_wen_D), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .JAL_ctrl(jal_ctrl), .JALR_ctrl(jalr_ctrl), .AIUPC_ctrl(aiupc_ctrl));
-	XOR_1 Control_regout(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(address_control));
+	Control Control(.Opcode(PC[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .selpc(selpc));
+	OR_1 UseData(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(getdata));
+	
 	//ID
 	Imm_Gen Imm_Gen(.Instruction(PC), .Immediate(immediate));
-	ADDER_32 NormalPC(.s0_data(4), .s1_data(PC), .output_data(normalpc));
+	
+	
+	ADDER_32 NormalPC(.s0_data(32'd4), .s1_data(PC), .output_data(normalpc));
+	ADDER_32 ImmPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
+    ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm)) ;
+    ADDER_32 Imm(.s0_data(32'd0,.s1_data(immediate)),.output_data(j_add)) ;
+
 	//EX
 	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
 	//TODO: ALU     ALU ALU(.clk(clk), .rst_n(rst_n), .valid(), .ready(), .mode(aluop), .in_A(), .in_B(), .out(aluout));
-	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl));
-	ADDER_32 BranchPC(.s0_data(PC), .s1_data(immediate), .output_data(branchpc));
+	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl), ,);
+	
+
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
-	MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
+	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
+	
+    MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(j_add),.sel(selpc));
+	MUX_32_2 DataMemAdress(.s0_data(0), .s1_data(aluout), .sel(getdata), .output_data(mem_addr_D));
 	//ME
-	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(address_control), .output_data(mem_addr_D));
+	MUX_32_2 PostALU(.s0_data(0), .s1_data(aluout), .sel(memwrite_ctrl), .output_data(mem_wdata_D));
 	//WB
-	MUX_32_2 WB(.s0_data(aluout), .s1_data(mem_rdata_D), .sel(memtoreg_ctrl), .output_data(wbrd));
+	//MUX_32_2 WB(.s0_data(aluout), .s1_data(mem_rdata_D), .sel(memtoreg_ctrl), .output_data(wbrd));
 	//TODO: jal, wbrd
 	
 	
@@ -324,6 +340,27 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
+module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel,output_data) ;
+    input [31:0] s0_data,s1_data,s2_data,s3_data ;
+    input [1:0]sel ;
+    output [31:0] output_data ;
+
+    reg signed [31:0] output_data ;
+
+    always @(s0_data or s1_data or s2_data or s3_data or sel) 
+    begin
+        case(sel) 
+            2'd0 : output_data = s0_data ;
+            2'd1 : output_data = s1_data ;
+            2'd2 : output_data = s2_data ;
+            2'd3 : output_data = s4_data ;
+            default : output_data = s0_data ;
+        endcase
+    end
+endmodule
+
+
+
 module ADDER_32(s0_data,s1_data,output_data) ;
     // part(5) in architecture image
 
@@ -352,8 +389,8 @@ module AND_1(s0,s1,output_value);
     end
 endmodule
 
-//XOR_1 TBD
-module XOR_1(s0,s1,output_value);
+//OR_1 TBD
+module OR_1(s0,s1,output_value);
     // part(6) in architecture image
     input s0,s1 ;
     output output_value ;
@@ -361,16 +398,17 @@ module XOR_1(s0,s1,output_value);
     reg output_data ;
     always @(s0 or s1) 
     begin
-        output_value = s0 ^ s1 ;
+        output_value = s0 | s1 ;
     end
 endmodule
 
-module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl);
+module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, selpc);
 	input Opcode;
-	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	output Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl;
 	output [1:0] ALUOP;
-	reg Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, JAL_ctrl, JALR_ctrl, AIUPC_ctrl;
+	reg Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl;
 	reg [1:0] ALUOP;
+	reg [1:0] selpc;
 	always@(*) begin
 		case(Opcode)
 			7'b0110011: begin
@@ -382,9 +420,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 0;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 0;
 			end
 			7'b0010011: begin
 				//I-type immediate
@@ -395,9 +431,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 0;
 			end
 			7'b0000011: begin
 				//I-type load
@@ -408,9 +442,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 0;
 			end
 			7'b0100011: begin
 				//S-type
@@ -421,9 +453,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 1;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 0;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 0;
 			end
 			7'b1100011: begin
 				//B-type
@@ -434,9 +464,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 0;
 				RegWrite_ctrl = 0;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 1;
 			end
 			7'b1101111: begin
 				//jal
@@ -447,9 +475,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 1;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 1;
 			end
 			7'b1100111: begin
 				//jalr
@@ -460,9 +486,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 1;
-				JALR_ctrl = 1;
-				AIUPC_ctrl = 0;
+				selpc = 2;
 			end
 			7'b0010111: begin
 				//auipc
@@ -473,9 +497,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 1;
 				RegWrite_ctrl = 1;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 1;
+				selpc = 1;
 			end
 			default: begin
 				Branch_ctrl = 0;
@@ -485,9 +507,7 @@ module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite
 				MemWrite_ctrl = 0;
 				ALUSrc_ctrl = 0;
 				RegWrite_ctrl = 0;
-				JAL_ctrl = 0;
-				JALR_ctrl = 0;
-				AIUPC_ctrl = 0;
+				selpc = 0;
 			end
 		endcase
 	end
