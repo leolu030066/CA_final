@@ -642,7 +642,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
             end
             default: ALU_ctrl = 0;
         endcase
-		if(ALU_ctrl == 2) mul = 1;
+		if(Instruction[25] == 1) mul = 1;
         else mul = 0;
     end
 
