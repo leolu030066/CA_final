@@ -50,11 +50,7 @@ module CHIP(clk,
 
     // Todo: any combinational/sequential circuit
 	
-	assign mem_addr_I = PC;
-	assign rs1 = mem_rdata_I[19:15];
-	assign rs2 = mem_rdata_I[24:20];
-	assign rd = mem_rdata_I[11:7];
-	assign mem_wen_D = memwrite_ctrl;
+	
 	//Control related
 	wire branch_ctrl, memread_ctrl, memtoreg_ctrl, alusrc_ctrl;
 	reg memwrite_ctrl;
@@ -87,11 +83,17 @@ module CHIP(clk,
     wire dobranch ;
 	wire _mul;
 	reg [1:0] selpc;
+
+    assign mem_addr_I = PC;
+	assign rs1 = mem_rdata_I[19:15];
+	assign rs2 = mem_rdata_I[24:20];
+	assign rd = mem_rdata_I[11:7];
 	
 	//Control
 	Control Control(.Opcode(mem_rdata_I[6:0]), .Branch_ctrl(branch_ctrl), .MemRead_ctrl(memread_ctrl), .MemtoReg_ctrl(memtoreg_ctrl), .ALUOP(aluop), .MemWrite_ctrl(memwrite_ctrl), .ALUSrc_ctrl(alusrc_ctrl), .RegWrite_ctrl(regWrite), .selpc(selpc));
 	// OR_1 UseData(.s0(memread_ctrl), .s1(memwrite_ctrl), .output_value(getdata));
-	
+	assign mem_wen_D = memwrite_ctrl;
+
 	//ID
 	Imm_Gen Imm_Gen(.Instruction(mem_rdata_I), .Immediate(immediate));
 	
@@ -122,26 +124,60 @@ module CHIP(clk,
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 
-    if (_mul) begin
-        if(ready)begin
-            MUX_32_4 SelPCM(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
+    // always @(normalpc or pc_imm or x1_imm or pc or selpc)begin
+    //     if (_mul) begin
+    //         if(ready)begin
+    //             MUX_32_4 SelPCM(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
+    //         end
+    //         else begin
+    //             MUX_32_4 SelPCMNY(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd3), .output_data(PC_nxt));
+    //         end
+    //     end
+    //     else if (sel == 2'b01)begin
+    //         // beq/bge
+    //         if(dobranch)begin
+    //             MUX_32_4 SelPCB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output_data(PC_nxt));
+    //         end
+    //         else begin
+    //             MUX_32_4 SelPCNB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
+    //         end
+    //     end 
+    //     else begin
+    //         MUX_32_4 SelPCE(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output_data(PC_nxt));
+    //     end
+    // end
+    always @(normalpc or pc_imm or x1_imm or PC or selpc)begin
+        if (_mul == 1'b1) begin
+            if(ready == 1'b1)begin
+                PC_nxt = normalpc ;
+            end
+            else begin
+                PC_nxt = PC ;
+            end
         end
         else begin
-            MUX_32_4 SelPCMNY(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd3), .output_data(PC_nxt));
-        end
+            if (sel == 2'd0)begin
+                PC_nxt = normalpc ;
+            end
+            // beq/bge
+            else if(sel == 2'd1)begin
+                if (dobranch = 1'd1) begin
+                    PC_nxt = pc_imm ;
+                end
+                else begin
+                    PC_nxt = normalpc ;
+                end
+            end
+            else if (sel == 2'd2)begin
+                PC_nxt = x1_imm ;
+            end
+            else begin
+                PC_nxt = PC ;
+            end
+        end 
     end
-    else if (sel == 2'b01)begin
-        // beq/bge
-        if(dobranch)begin
-            MUX_32_4 SelPCB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output_data(PC_nxt));
-        end
-        else begin
-            MUX_32_4 SelPCNB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
-        end
-    end 
-    else begin
-        MUX_32_4 SelPCE(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output_data(PC_nxt));
-    end
+        
+
     
 
 	//ME
