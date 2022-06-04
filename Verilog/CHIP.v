@@ -24,13 +24,15 @@ module CHIP(clk,
     // Do not modify this part!!!            //
     // Exception: You may change wire to reg //
     reg    [31:0] PC          ;              //
-    wire   [31:0] PC_nxt      ;              //
+    reg   [31:0] PC_nxt      ;              //
     wire          regWrite    ;              //
     wire   [ 4:0] rs1, rs2, rd;              //
     wire   [31:0] rs1_data    ;              //
     wire   [31:0] rs2_data    ;              //
     wire   [31:0] rd_data     ;              //
     //---------------------------------------//
+
+    //change PC_nex to reg
 
     // Todo: other wire/reg
 	
@@ -371,11 +373,11 @@ module MUX_32_2(output_data,s0_data,s1_data,sel);
     input sel ;
     output [31:0] output_data ;
 
-    reg signed [31:0] output_data ;
+    reg [31:0] output_data ;
 
-    always @(s0_data or s1_data or sel) 
+    always @(*) 
     begin
-        if(sel) output_data = s1_data ;
+        if(sel==1'd1) output_data = s1_data ;
         else output_data = s0_data ;
     end
 endmodule
@@ -384,17 +386,22 @@ module MUX_32_4(output_data,s0_data,s1_data,s2_data,s3_data,sel) ;
     input [31:0] s0_data,s1_data,s2_data ,s3_data;
     input [1:0]sel ;
     output [31:0] output_data ;
-    reg signed [31:0] output_data ;
+    reg [31:0] output_data ;
 
-    always @(s0_data or s1_data or s2_data or s3_data or sel) 
+    always @(*) 
     begin
-        case(sel) 
-            2'd0 : output_data = s0_data ;
-            2'd1 : output_data = s1_data ;
-            2'd2 : output_data = s2_data ;
-            2'd3 : output_data = s3_data ;
-            default : output_data = s0_data ;
-        endcase
+        if(sel == 2'd0) begin
+            output_data = s0_data ;
+        end
+        else if(sel == 2'd1) begin
+            output_data = s1_data ;
+        end
+        else if(sel == 2'd2) begin
+            output_data = s2_data ;
+        end
+        else begin
+            output_data = s3_data ;
+        end
     end
 endmodule
 
