@@ -468,20 +468,18 @@ module AND_1(s0,s1,output_value);
 endmodule
 
 
-//OR_1 TBD
-module OR_1(s0,s1,output_value);
+// module OR_1(s0,s1,output_value);
 
 
-    // part(6) in architecture image
-    input s0,s1 ;
-    output output_value ;
+//     // part(6) in architecture image
+//     input s0,s1 ;
+//     output output_value ;
 
-    reg output_data ;
-    always @(s0 or s1) 
-    begin
-        output_value = (s0 || s1) ;
-    end
-endmodule
+//     always @(s0 or s1) 
+//     begin
+//         output_value = (s0 || s1) ;
+//     end
+// endmodule
 
 module Control(Opcode, Branch_ctrl, MemRead_ctrl, MemtoReg_ctrl, ALUOP, MemWrite_ctrl, ALUSrc_ctrl, RegWrite_ctrl, selpc);
 	input [6:0] Opcode;
