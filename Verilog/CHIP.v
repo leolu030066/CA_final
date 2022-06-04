@@ -124,19 +124,24 @@ module CHIP(clk,
 
     always @(normalpc or pc_imm or x1_imm or pc or selpc)begin
         if (_mul) begin
-
+            if(ready)begin
+                MUX_32_4 SelPCM(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
+            end
+            else begin
+                MUX_32_4 SelPCMNY(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd3), .output_data(PC_nxt));
+            end
         end
         else if (sel == 2'b01)begin
             // beq/bge
             if(dobranch)begin
-                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output(PC_nxt));
+                MUX_32_4 SelPCB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output_data(PC_nxt));
             end
             else begin
-                MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output(PC_nxt));
+                MUX_32_4 SelPCNB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
             end
-            
+        end 
         else begin
-            MUX_32_4 SelPC(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output(PC_nxt));
+            MUX_32_4 SelPCE(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output_data(PC_nxt));
         end
     end
     
@@ -359,7 +364,7 @@ module Imm_Gen(Instruction, Immediate);
     end
 endmodule
 
-module MUX_32_2(s0_data,s1_data,sel,output_data);
+module MUX_32_2(output_data,s0_data,s1_data,sel);
     // part(4) in architecture image
 
     input [31:0] s0_data,s1_data ;
@@ -375,11 +380,10 @@ module MUX_32_2(s0_data,s1_data,sel,output_data);
     end
 endmodule
 
-module MUX_32_4(s0_data,s1_data,s2_data,s3_data,sel, output_data) ;
+module MUX_32_4(output_data,s0_data,s1_data,s2_data,s3_data,sel) ;
     input [31:0] s0_data,s1_data,s2_data ,s3_data;
     input [1:0]sel ;
     output [31:0] output_data ;
-
     reg signed [31:0] output_data ;
 
     always @(s0_data or s1_data or s2_data or s3_data or sel) 
