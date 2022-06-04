@@ -604,46 +604,46 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
         case(ALUOP)
             2'b00: begin
                 //I-type load, S-type, jal, jalr
-                ALU_ctrl = 0;
+                ALU_ctrl = 3'b000;
             end
             2'b01: begin
                 //B-type
 				case(Instruction[14:12])
 					3'b000: begin
-						ALU_ctrl = 1;
+						ALU_ctrl = 3'b001;
 					end
 					3'b101: begin
-						ALU_ctrl = 5;
+						ALU_ctrl = 3'b101;
 					end
-					default: ALU_ctrl = 1;
+					default: ALU_ctrl = 3'b001;
 				endcase
             end
             2'b10: begin
                 //R-type
                 case(Instruction[14:12])
                     3'b000: begin
-                        if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
+                        if(Instruction[30] == 1) ALU_ctrl = 3'b001;//sub instruction
                         else begin
-                            if(Instruction[25] == 1)ALU_ctrl = 2;//mul instruction
-                            else ALU_ctrl = 0;//add instruction
+                            if(Instruction[25] == 1)ALU_ctrl = 3'b010;//mul instruction
+                            else ALU_ctrl = 3'b000;//add instruction
                         end
                     end
-                    default: ALU_ctrl = 0;
+                    default: ALU_ctrl = 3'b000;
                 endcase
             end
             2'b11: begin
                 //I-type immediate, auipc
                 case(Instruction[14:12])
-                    3'b000: ALU_ctrl = 0;//addi instruxtion
-                    3'b001: ALU_ctrl = 3;//slli instruxtion
-                    3'b101: ALU_ctrl = 4;//srli instruxtion
-                    default: ALU_ctrl = 0;
+                    3'b000: ALU_ctrl = 3'b000;//addi instruxtion
+                    3'b001: ALU_ctrl = 3'b011;//slli instruxtion
+                    3'b101: ALU_ctrl = 3'b100;//srli instruxtion
+                    default: ALU_ctrl = 3'b000;
                 endcase
             end
-            default: ALU_ctrl = 0;
+            default: ALU_ctrl = 3'b000;
         endcase
-		if(ALU_ctrl == 2) mul = 1;
-        else mul = 0;
+		if(ALU_ctrl == 3'b010) mul = 1'b1;
+        else mul = 1'b0;
     end
 
 endmodule

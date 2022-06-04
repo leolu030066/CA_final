@@ -63,7 +63,7 @@ module CHIP(clk,
 	//ALU related
 	reg [31:0] aluout;
 	//ALUControl related
-	wire alu_ctrl;
+	wire [2:0] alu_ctrl;
 
     wire mul_aluout;
 
@@ -597,16 +597,16 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
     //ALU 0: add, 1:sub, 2:mul, 3: shift_left, 4:shift_right, 5:bge
     input [31:0] Instruction;
 	input [1:0] ALUOP;
-    output [1:0] ALU_ctrl;
+    output [2:0] ALU_ctrl;
     output mul;
-    reg [1:0] ALU_ctrl;
+    reg [2:0] ALU_ctrl;
     always@(*) begin
         case(ALUOP)
-            0: begin
+            2'b00: begin
                 //I-type load, S-type, jal, jalr
                 ALU_ctrl = 0;
             end
-            1: begin
+            2'b01: begin
                 //B-type
 				case(Instruction[14:12])
 					3'b000: begin
@@ -618,20 +618,20 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
 					default: ALU_ctrl = 1;
 				endcase
             end
-            2: begin
+            2'b10: begin
                 //R-type
                 case(Instruction[14:12])
                     3'b000: begin
                         if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
                         else begin
-                            if(Instruction[25] == 1) ALU_ctrl = 2;//mul instruction
+                            if(Instruction[25] == 1)ALU_ctrl = 2;//mul instruction
                             else ALU_ctrl = 0;//add instruction
                         end
                     end
                     default: ALU_ctrl = 0;
                 endcase
             end
-            3: begin
+            2'b11: begin
                 //I-type immediate, auipc
                 case(Instruction[14:12])
                     3'b000: ALU_ctrl = 0;//addi instruxtion
@@ -640,10 +640,10 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
                     default: ALU_ctrl = 0;
                 endcase
             end
-            if(ALU_ctrl == 2) mul = 1;
-            else mul = 0;
             default: ALU_ctrl = 0;
         endcase
+		if(ALU_ctrl == 2) mul = 1;
+        else mul = 0;
     end
 
 endmodule
