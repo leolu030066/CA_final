@@ -148,7 +148,7 @@ module CHIP(clk,
     // end
     always @(normalpc or pc_imm or x1_imm or PC or selpc)begin
         if (_mul == 1'b1) begin
-            if(ready == 1'b1)begin
+            if(mul_ready == 1'b1)begin
                 PC_nxt = normalpc ;
             end
             else begin
@@ -156,11 +156,11 @@ module CHIP(clk,
             end
         end
         else begin
-            if (sel == 2'd0)begin
+            if (selpc == 2'd0)begin
                 PC_nxt = normalpc ;
             end
             // beq/bge
-            else if(sel == 2'd1)begin
+            else if(selpc == 2'd1)begin
                 if (dobranch == 1'd1) begin
                     PC_nxt = pc_imm ;
                 end
@@ -168,7 +168,7 @@ module CHIP(clk,
                     PC_nxt = normalpc ;
                 end
             end
-            else if (sel == 2'd2)begin
+            else if (selpc == 2'd2)begin
                 PC_nxt = x1_imm ;
             end
             else begin
