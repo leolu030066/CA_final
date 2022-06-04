@@ -53,36 +53,36 @@ module CHIP(clk,
 	
 	//Control related
 	wire branch_ctrl, memread_ctrl, memtoreg_ctrl, alusrc_ctrl;
-	reg memwrite_ctrl;
+	wire memwrite_ctrl;
 	wire [1:0] aluop;
 	wire address_control;
 	//Imm_Gen related
-	reg signed [31:0] immediate;
+	wire signed [31:0] immediate;
 	//PreALU related
-	reg [31:0] prealuout;
+	wire [31:0] prealuout;
 	//ALU related
-	reg [31:0] aluout;
+	wire [31:0] aluout;
 	//ALUControl related
 	wire [2:0] alu_ctrl;
 
-    wire mul_aluout;
+    wire [31:0] mul_aluout;
 
     wire mul_ready;
 
-    wire final_aluout;
+    wire [31:0] final_aluout;
 	//WB related
 	// wire wbrd;
 	//NormalPC related (PC+4)
-	reg [31:0] normalpc;
+	wire [31:0] normalpc;
 	//Branch/JAL/AUIPC target address (PC+immediate)
-	reg [31:0] pc_imm;
+	wire [31:0] pc_imm;
     //JALR target address (x1+immediate)
-    reg [31:0] x1_imm;
+    wire [31:0] x1_imm;
 
 	//SelPC related
     wire dobranch ;
 	wire _mul;
-	reg [1:0] selpc;
+	wire [1:0] selpc;
 
     assign mem_addr_I = PC;
 	assign rs1 = mem_rdata_I[19:15];
@@ -103,11 +103,11 @@ module CHIP(clk,
     ADDER_32 Immrs1(.s0_data(rs1_data),.s1_data(immediate),.output_data(x1_imm));
 
 	//EX
-	MUX_32_2 PreALU(.s0_data(rs2), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
+	MUX_32_2 PreALU(.s0_data(rs2_data), .s1_data(immediate), .sel(alusrc_ctrl), .output_data(prealuout));
 	
 	ALUControl ALUControl(.ALUOP(aluop), .Instruction(PC), .ALU_ctrl(alu_ctrl),.mul(_mul));
 
-    BasicALU EXE(.input_1(rs1),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero));
+    BasicALU EXE(.input_1(rs1_data),.input_2(prealuout),.mode(alu_ctrl),.out(aluout),.out_zero(aluzero));
     //Todo MUX
     MUL MUL(
         .clk(clk),
@@ -115,7 +115,7 @@ module CHIP(clk,
         .valid(_mul),
         .ready(mul_ready),
         .mode(alu_ctrl),
-        .in_A(rs1),
+        .in_A(rs1_data),
         .in_B(prealuout),
         .out(mul_aluout)
         );
@@ -599,6 +599,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
 	input [1:0] ALUOP;
     output [2:0] ALU_ctrl;
     output mul;
+	reg mul;
     reg [2:0] ALU_ctrl;
     always@(*) begin
         case(ALUOP)
@@ -642,7 +643,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
             end
             default: ALU_ctrl = 0;
         endcase
-		if(Instruction[25] == 1) mul = 1;
+		if(ALU_ctrl == 2) mul = 1;
         else mul = 0;
     end
 
@@ -695,7 +696,6 @@ module MUL(
     in_A,
     in_B,
     out,
-    out_zero
 );
 
     // Definition of ports
@@ -705,7 +705,6 @@ module MUL(
     output        ready;
     input  [31:0] in_A, in_B;
     output [63:0] out;
-    output        out_zero;
 
     // Definition of states
     parameter IDLE = 3'd0;
