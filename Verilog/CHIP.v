@@ -161,7 +161,7 @@ module CHIP(clk,
             end
             // beq/bge
             else if(sel == 2'd1)begin
-                if (dobranch = 1'd1) begin
+                if (dobranch == 1'd1) begin
                     PC_nxt = pc_imm ;
                 end
                 else begin
@@ -463,7 +463,7 @@ module AND_1(s0,s1,output_value);
     reg output_data ;
     always @(s0 or s1) 
     begin
-        output_value = (s0 & s1) ;
+        output_value = (s0 && s1) ;
     end
 endmodule
 
@@ -479,7 +479,7 @@ module OR_1(s0,s1,output_value);
     reg output_data ;
     always @(s0 or s1) 
     begin
-        output_value = (s0 | s1) ;
+        output_value = (s0 || s1) ;
     end
 endmodule
 
