@@ -599,6 +599,7 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
 	input [1:0] ALUOP;
     output [2:0] ALU_ctrl;
     output mul;
+	reg mul;
     reg [2:0] ALU_ctrl;
     always@(*) begin
         case(ALUOP)
