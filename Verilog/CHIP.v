@@ -460,7 +460,7 @@ module AND_1(s0,s1,output_value);
     input s0,s1 ;
     output output_value ;
 
-    reg output_data ;
+    reg output_value ;
     always @(s0 or s1) 
     begin
         output_value = (s0 && s1) ;
