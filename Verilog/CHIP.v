@@ -31,8 +31,7 @@ module CHIP(clk,
     wire   [31:0] rs2_data    ;              //
     wire   [31:0] rd_data     ;              //
     //---------------------------------------//
-
-
+    
     // Todo: other wire/reg
 	
     //---------------------------------------//
@@ -123,27 +122,25 @@ module CHIP(clk,
 	AND_1 Branchdetect(.s0(branch_ctrl), .s1(aluzero), .output_value(dobranch));
 	// MUX_32_2 SelPC(.s0_data(normalpc), .s1_data(branchpc), .sel(dobranch), .output_data(PC_nxt));
 
-    always @(normalpc or pc_imm or x1_imm or pc or selpc)begin
-        if (_mul) begin
-            if(ready)begin
-                MUX_32_4 SelPCM(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
-            end
-            else begin
-                MUX_32_4 SelPCMNY(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd3), .output_data(PC_nxt));
-            end
+    if (_mul) begin
+        if(ready)begin
+            MUX_32_4 SelPCM(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
         end
-        else if (sel == 2'b01)begin
-            // beq/bge
-            if(dobranch)begin
-                MUX_32_4 SelPCB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output_data(PC_nxt));
-            end
-            else begin
-                MUX_32_4 SelPCNB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
-            end
-        end 
         else begin
-            MUX_32_4 SelPCE(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output_data(PC_nxt));
+            MUX_32_4 SelPCMNY(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd3), .output_data(PC_nxt));
         end
+    end
+    else if (sel == 2'b01)begin
+        // beq/bge
+        if(dobranch)begin
+            MUX_32_4 SelPCB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd1), .output_data(PC_nxt));
+        end
+        else begin
+            MUX_32_4 SelPCNB(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(2'd0), .output_data(PC_nxt));
+        end
+    end 
+    else begin
+        MUX_32_4 SelPCE(.s0_data(normalpc),.s1_data(pc_imm),.s2_data(x1_imm),.s3_data(PC),.sel(selpc), .output_data(PC_nxt));
     end
     
 
@@ -372,16 +369,36 @@ module MUX_32_2(output_data,s0_data,s1_data,sel);
     input sel ;
     output [31:0] output_data ;
 
-    assign output_data = (sel == 1'b0)? s0_data : s1_data;
+    reg [31:0] output_data ;
 
+    always @(*) 
+    begin
+        if(sel==1'd1) output_data = s1_data ;
+        else output_data = s0_data ;
+    end
 endmodule
 
 module MUX_32_4(output_data,s0_data,s1_data,s2_data,s3_data,sel) ;
     input [31:0] s0_data,s1_data,s2_data ,s3_data;
     input [1:0]sel ;
     output [31:0] output_data ;
-    assign output_data = (sel == 1'b0)? s0_data : (sel == 1'b1)? s1_data : (sel == 1'b2)? s2_data : s3_data ;
+    reg [31:0] output_data ;
 
+    always @(*) 
+    begin
+        if(sel == 2'd0) begin
+            output_data = s0_data ;
+        end
+        else if(sel == 2'd1) begin
+            output_data = s1_data ;
+        end
+        else if(sel == 2'd2) begin
+            output_data = s2_data ;
+        end
+        else begin
+            output_data = s3_data ;
+        end
+    end
 endmodule
 
 
