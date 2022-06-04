@@ -63,9 +63,8 @@ module CHIP(clk,
 	//ALU related
 	reg [31:0] aluout;
 	//ALUControl related
-	reg [2:0] alu_ctrl;
-	reg _mul;
-	
+	wire [2:0] alu_ctrl;
+
     wire mul_aluout;
 
     wire mul_ready;
@@ -82,7 +81,7 @@ module CHIP(clk,
 
 	//SelPC related
     wire dobranch ;
-	
+	wire _mul;
 	reg [1:0] selpc;
 
     assign mem_addr_I = PC;
@@ -600,83 +599,51 @@ module ALUControl(ALUOP, Instruction, ALU_ctrl,mul);
 	input [1:0] ALUOP;
     output [2:0] ALU_ctrl;
     output mul;
-	reg mul;
     reg [2:0] ALU_ctrl;
     always@(*) begin
         case(ALUOP)
             2'b00: begin
                 //I-type load, S-type, jal, jalr
-                ALU_ctrl = 3'b000;
-				mul = 1'b0;
+                ALU_ctrl = 0;
             end
             2'b01: begin
                 //B-type
 				case(Instruction[14:12])
 					3'b000: begin
-						ALU_ctrl = 3'b001;
-						mul = 1'b0;
+						ALU_ctrl = 1;
 					end
 					3'b101: begin
-						ALU_ctrl = 3'b101;
-						mul = 1'b0;
+						ALU_ctrl = 5;
 					end
-					default: begin
-						ALU_ctrl = 3'b001;
-						mul = 1'b0;
-					end
+					default: ALU_ctrl = 1;
 				endcase
             end
             2'b10: begin
                 //R-type
                 case(Instruction[14:12])
                     3'b000: begin
-                        if(Instruction[30] == 1) begin
-							ALU_ctrl = 3'b001;//sub instruction
-							mul = 1'b0;
-						end
+                        if(Instruction[30] == 1) ALU_ctrl = 1;//sub instruction
                         else begin
-                            if(Instruction[25] == 1) begin
-								ALU_ctrl = 3'b010;//mul instruction
-								mul = 1'b1;
-							end
-                            else begin
-								ALU_ctrl = 3'b000;//add instruction
-								mul = 1'b0;
-							end
+                            if(Instruction[25] == 1)ALU_ctrl = 2;//mul instruction
+                            else ALU_ctrl = 0;//add instruction
                         end
                     end
-                    default: begin
-						ALU_ctrl = 3'b000;
-						mul = 1'b0;
-					end
+                    default: ALU_ctrl = 0;
                 endcase
             end
             2'b11: begin
                 //I-type immediate, auipc
                 case(Instruction[14:12])
-                    3'b000: begin
-						ALU_ctrl = 3'b000;//addi instruxtion
-						mul = 1'b0;
-					end
-                    3'b001: begin
-						ALU_ctrl = 3'b011;//slli instruxtion
-						mul = 1'b0;
-					end
-                    3'b101: begin
-						ALU_ctrl = 3'b100;//srli instruxtion
-						mul = 1'b0;
-					end
-                    default: begin
-						ALU_ctrl = 3'b000;
-						mul = 1'b0;
-					end
+                    3'b000: ALU_ctrl = 0;//addi instruxtion
+                    3'b001: ALU_ctrl = 3;//slli instruxtion
+                    3'b101: ALU_ctrl = 4;//srli instruxtion
+                    default: ALU_ctrl = 0;
                 endcase
             end
-            default: begin 
-				ALU_ctrl = 3'b000;
-				mul = 1'b0;
-			end
+            default: ALU_ctrl = 0;
         endcase
+		if(ALU_ctrl == 2) mul = 1;
+        else mul = 0;
     end
 
 endmodule
