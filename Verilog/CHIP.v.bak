@@ -81,7 +81,7 @@ module CHIP(clk,
 
 	//SelPC related
     wire dobranch ;
-	wire _mul;
+	reg _mul;
 	reg [1:0] selpc;
 
     assign mem_addr_I = PC;

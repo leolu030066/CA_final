@@ -63,8 +63,9 @@ module CHIP(clk,
 	//ALU related
 	reg [31:0] aluout;
 	//ALUControl related
-	wire [2:0] alu_ctrl;
-
+	reg [2:0] alu_ctrl;
+	reg _mul;
+	
     wire mul_aluout;
 
     wire mul_ready;
@@ -81,7 +82,7 @@ module CHIP(clk,
 
 	//SelPC related
     wire dobranch ;
-	reg _mul;
+	
 	reg [1:0] selpc;
 
     assign mem_addr_I = PC;
